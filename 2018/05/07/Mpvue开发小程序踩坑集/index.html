@@ -1,0 +1,70 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><title> 关于mpvue的实现方式以及与vue联系的探究 · Aeolos</title><meta name="description" content="关于mpvue的实现方式以及与vue联系的探究 - Aeolos"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="/fav.png"><link rel="stylesheet" href="/css/apollo.css"><link rel="search" type="application/opensearchdescription+xml" href="https://aeolos1994.github.io/atom.xml" title="Aeolos"></head><body><div class="wrap"><header><a href="/" class="logo-link"><img src="/favicon.png" alt="logo"></a><ul class="nav nav-list"><li class="nav-list-item"><a href="/" target="_self" class="nav-list-link">BLOG</a></li><li class="nav-list-item"><a href="/archives/" target="_self" class="nav-list-link">ARCHIVE</a></li><li class="nav-list-item"><a href="https://github.com/aeolos1994" target="_blank" class="nav-list-link">GITHUB</a></li></ul></header><main class="container"><div class="post"><article class="post-block"><h1 class="post-title">关于mpvue的实现方式以及与vue联系的探究</h1><div class="post-info">May 7, 2018</div><div class="post-content"><p>Mpvue开发小程序踩坑集，以及使用过程对于mpvue的研究和思考,本次博文源于我在公司内部的一次技术分享，源keynote我将会放在文章末尾。<br><a id="more"></a></p>
+<p>##目录</p>
+<h3 id="1-什么是小程序"><a href="#1-什么是小程序" class="headerlink" title="1.什么是小程序"></a>1.什么是小程序</h3><pre><code>1.1  小程序介绍
+1.2  小程序特点与限制
+1.3  原生小程序文件结构
+</code></pre><h3 id="2-Mpvue怎么来的"><a href="#2-Mpvue怎么来的" class="headerlink" title="2.Mpvue怎么来的"></a>2.Mpvue怎么来的</h3><pre><code>2.1  为什么要有Mpvue
+2.2  小程序原理
+2.3  Vue MVVM原理
+2.4  Mpvue切入点
+</code></pre><h3 id="3-Mpvue实现原理"><a href="#3-Mpvue实现原理" class="headerlink" title="3.Mpvue实现原理"></a>3.Mpvue实现原理</h3><pre><code>3.1  Compiler
+3.2  生命周期关联
+3.3  事件代理
+3.4  数据同步
+3.5  实例化过程概览
+</code></pre><h3 id="4-使用Mpvue开发"><a href="#4-使用Mpvue开发" class="headerlink" title="4.使用Mpvue开发"></a>4.使用Mpvue开发</h3><pre><code>4.1   准备工作
+4.2   如何调试
+4.3   如何配置
+</code></pre><h3 id="5-踩坑指南"><a href="#5-踩坑指南" class="headerlink" title="5.踩坑指南"></a>5.踩坑指南</h3><p><strong>下面进入正文</strong></p>
+<h3 id="什么是小程序"><a href="#什么是小程序" class="headerlink" title="什么是小程序"></a>什么是小程序</h3><p>微信内部的轻量级应用，<br>一种全新的连接用户与服务的方式</p>
+<h3 id="为什么是小程序"><a href="#为什么是小程序" class="headerlink" title="为什么是小程序"></a>为什么是小程序</h3><ol>
+<li>基于微信 - 触达用户广泛</li>
+<li>轻量级 - 即来即用，用完就走</li>
+<li>病毒式传播 - 可以随手转发</li>
+<li>开发简单 - 尤其对于前端</li>
+<li>原生体验 - 可以借助很多微信提供的API</li>
+</ol>
+<h3 id="为什么要有Mpvue"><a href="#为什么要有Mpvue" class="headerlink" title="为什么要有Mpvue"></a>为什么要有Mpvue</h3><ol>
+<li>实现了技术栈统一</li>
+<li>组件化开发</li>
+<li>多端代码复用</li>
+<li>降低学习成本</li>
+<li>提高开发效率的目标</li>
+</ol>
+<h3 id="小程序的特点与限制"><a href="#小程序的特点与限制" class="headerlink" title="小程序的特点与限制"></a>小程序的特点与限制</h3><ol>
+<li>会下载整个小程序包</li>
+<li>小程序大小限制2M</li>
+<li>多页面应用</li>
+</ol>
+<h3 id="原生小程序文件构成"><a href="#原生小程序文件构成" class="headerlink" title="原生小程序文件构成"></a>原生小程序文件构成</h3><table>
+<thead>
+<tr>
+<th>文件</th>
+<th>作用 </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WXML</td>
+<td>描述页面结构</td>
+</tr>
+<tr>
+<td>WXSS</td>
+<td>定义页面元素的样式</td>
+</tr>
+<tr>
+<td>JS</td>
+<td>业务逻辑、用户交互</td>
+</tr>
+<tr>
+<td>JSON</td>
+<td>主要用作配置文件</td>
+</tr>
+</tbody>
+</table>
+<h3 id="小程序对比Vue逻辑视图层交互"><a href="#小程序对比Vue逻辑视图层交互" class="headerlink" title="小程序对比Vue逻辑视图层交互"></a>小程序对比Vue逻辑视图层交互</h3><p>我们先看一下原生小程序是如何在逻辑与页面之间进行交互的<br><a href="https://postimg.cc/ykvSmvgC" target="_blank" rel="noopener"><img src="https://i.postimg.cc/VkcBchzv/image.png" alt="image.png"></a></p>
+<p>在原生小程序内部有一个setData方法，有些类似react的shouldUpdateComponent，作用就是逻辑层通知视图层更新页面，而视图层的交互触发逻辑处理，依然是event。</p>
+<p>虽然Vue我们都知道是通过defineProperty（Vue3.0版本将会使用Proxy）来进行双向绑定的，但是为了对比，我们还是再捋一下其中的流程与原理。</p>
+<p><a href="https://postimg.cc/YL2CjBxG" target="_blank" rel="noopener"><img src="https://i.postimg.cc/7h0GsxGV/Vue.png" alt="Vue.png"></a></p>
+<p>首先从renderFunction开始，生成虚拟dom树，在执行renderFunction中的过程中将会从vue实例中取值，如data, props, computed等等。这些数据都设置了getter, 在getter中Vue为数据对象设置了Dep对象</p>
+</div></article></div></main><footer><div class="paginator"><a href="/2018/06/01/Js异步实现模型-EventLoop/" class="prev">PREV</a><a href="/2018/03/22/optimization_of_tree/" class="next">NEXT</a></div><div class="copyright"><p>© 2015 - 2018 <a href="https://aeolos1994.github.io">Aeolos</a>, powered by <a href="https://github.com/aeolos1994" target="_blank">Kongpei</a>.</p></div></footer></div><script async src="//cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML" integrity="sha384-crwIf/BuaWM9rM65iM+dWFldgQ1Un8jWZMuh3puxb8TOY9+linwLoI7ZHZT+aekW" crossorigin="anonymous"></script></body></html>
